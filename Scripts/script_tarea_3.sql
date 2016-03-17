@@ -1,0 +1,143 @@
+--1. Consultar la cantidad de likes por publicación.
+SELECT CODIGO_PUBLICACION, 
+      COUNT(1) AS CANTIDAD_LIKES
+FROM TBL_LIKE_PUBLICACIONES
+GROUP BY CODIGO_PUBLICACION;
+
+--2. Consultar la cantidad de likes por fotografía.
+SELECT CODIGO_FOTO, 
+      COUNT(1) AS CANTIDAD_LIKES
+FROM TBL_LIKE_FOTOGRAFIAS
+GROUP BY CODIGO_FOTO;
+
+--3. Consultar los grupos en los cuales la cantidad de usuarios sea mayor que 5, mostrar el nombre del grupo y la cantidad de usuarios.
+SELECT A.CODIGO_GRUPO,
+      B.NOMBRE_GRUPO,
+      COUNT(1) AS CANTIDAD_USUARIOS
+FROM TBL_GRUPOS_X_USUARIO A
+INNER JOIN TBL_GRUPOS B
+ON (A.CODIGO_GRUPO = B.CODIGO_GRUPO)
+GROUP BY A.CODIGO_GRUPO,B.NOMBRE_GRUPO
+HAVING COUNT(1)>5;
+
+--4. Mostrar la cantidad de amistades pendientes y rechazadas.
+
+SELECT *
+FROM TBL_USUARIOS;
+
+SELECT  --A.CODIGO_USUARIO, 
+        --B.NOMBRE_USUARIO,
+        C.NOMBRE_ESTATUS,
+        COUNT(1) CANTIDAD_SOLICITUDES
+FROM TBL_AMIGOS A
+LEFT JOIN TBL_USUARIOS B
+ON (A.CODIGO_USUARIO = B.CODIGO_USUARIO)
+LEFT JOIN TBL_ESTATUS_SOLICITUDES C
+ON (A.CODIGO_ESTATUS = C.CODIGO_ESTATUS)
+WHERE A.CODIGO_ESTATUS IN (2, 3)
+GROUP BY --A.CODIGO_USUARIO, 
+--        B.NOMBRE_USUARIO,
+        C.NOMBRE_ESTATUS;
+
+
+--5. Mostrar el usuario con mayor cantidad de amigos confirmados (El más cool).
+
+
+SELECT ROWNUM, A.*
+FROM (
+    SELECT  A.CODIGO_USUARIO, 
+          B.NOMBRE_USUARIO,
+          COUNT(1) SOLICITUDES_CONFIRMADAS
+    FROM TBL_AMIGOS A
+    INNER JOIN TBL_USUARIOS B
+    ON (A.CODIGO_USUARIO = B.CODIGO_USUARIO)
+    WHERE A.CODIGO_ESTATUS  = 1
+    GROUP BY A.CODIGO_USUARIO,B.NOMBRE_USUARIO
+    ORDER BY SOLICITUDES_CONFIRMADAS DESC
+) A
+WHERE ROWNUM = 1;
+
+--6. Mostrar el usuario con más solicitudes rechazadas (Forever alone).
+SELECT ROWNUM, A.*
+FROM (
+    SELECT  A.CODIGO_USUARIO, 
+          B.NOMBRE_USUARIO,
+          COUNT(1) SOLICITUDES_RECHAZAS
+    FROM TBL_AMIGOS A
+    INNER JOIN TBL_USUARIOS B
+    ON (A.CODIGO_USUARIO = B.CODIGO_USUARIO)
+    WHERE A.CODIGO_ESTATUS  = 2
+    GROUP BY A.CODIGO_USUARIO,B.NOMBRE_USUARIO
+    ORDER BY SOLICITUDES_RECHAZAS DESC
+) A
+WHERE ROWNUM = 1;
+
+--7. Mostrar la cantidad de usuarios registrados mensualmente.
+
+SELECT TO_CHAR(FECHA_REGISTRO, 'YYYY-MM') AS MES, 
+      COUNT(1) CANTIDAD_USUARIOS
+FROM TBL_USUARIOS
+GROUP BY TO_CHAR(FECHA_REGISTRO, 'YYYY-MM')
+ORDER BY MES;
+
+--8. Mostrar la edad promedio de los usuarios por género.
+
+SELECT GENERO_USUARIO, 
+      ROUND(AVG(EDAD),2) AS EDAD_PROMEDIO
+FROM TBL_USUARIOS
+GROUP BY GENERO_USUARIO;
+
+/*
+9. Con respecto al historial de accesos se necesita saber el crecimiento de los accesos del día 19 de Agosto del 2015 con respecto al día anterior, la fórmula para calcular dicho crecimiento se muestra a continuación:
+((b-a)/a) * 100
+Donde:
+a = Cantidad de accesos del día anterior (18 de Agosto del 2015)
+b = Cantidad de accesos del día actual (19 de Agosto del 2015)
+Mostrar el resultado como un porcentaje (Concatenar %)
+*/
+
+
+
+SELECT COUNT(1) CANTIDAD_ACCESOS_A
+FROM TBL_HISTORIAL_ACCESOS
+WHERE FECHA_HORA_ACCESO = TO_DATE('18-08-2015','DD-MM-YYYY');
+
+SELECT COUNT(1) CANTIDAD_ACCESOS_B
+FROM TBL_HISTORIAL_ACCESOS
+WHERE FECHA_HORA_ACCESO = TO_DATE('19-08-2015','DD-MM-YYYY');
+
+
+SELECT (
+        (
+          (
+            SELECT COUNT(1) CANTIDAD_ACCESOS_B
+            FROM TBL_HISTORIAL_ACCESOS
+            WHERE FECHA_HORA_ACCESO = TO_DATE('19-08-2015','DD-MM-YYYY')
+          )
+          -
+          (
+            SELECT COUNT(1) CANTIDAD_ACCESOS_A
+            FROM TBL_HISTORIAL_ACCESOS
+            WHERE FECHA_HORA_ACCESO = TO_DATE('18-08-2015','DD-MM-YYYY')
+          ))/
+          (
+            SELECT COUNT(1) CANTIDAD_ACCESOS_A
+            FROM TBL_HISTORIAL_ACCESOS
+            WHERE FECHA_HORA_ACCESO = TO_DATE('18-08-2015','DD-MM-YYYY')
+          )
+      ) * 100 || '%' AS RESULTADO
+FROM DUAL;
+
+
+SELECT ((B.CANTIDAD_ACCESOS_B-A.CANTIDAD_ACCESOS_A)/A.CANTIDAD_ACCESOS_A) * 100  || '%' AS RESULTADO
+FROM 
+    (
+        SELECT COUNT(1) CANTIDAD_ACCESOS_A
+        FROM TBL_HISTORIAL_ACCESOS
+        WHERE FECHA_HORA_ACCESO = TO_DATE('18-08-2015','DD-MM-YYYY')
+    ) A,
+    (
+      SELECT COUNT(1) CANTIDAD_ACCESOS_B
+      FROM TBL_HISTORIAL_ACCESOS
+      WHERE FECHA_HORA_ACCESO = TO_DATE('19-08-2015','DD-MM-YYYY')
+    ) B;
